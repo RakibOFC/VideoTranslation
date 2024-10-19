@@ -2,15 +2,37 @@ package com.insheera.video.translation
 
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.SubtitleView
 
+@UnstableApi
 class MainActivity : AppCompatActivity() {
 
     private lateinit var player: ExoPlayer
     private lateinit var playerView: PlayerView
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var subtitleTextView: TextView
+
+    data class Subtitle(
+        val startTime: Long,
+        val endTime: Long,
+        val text: String
+    )
+
+    private val subtitles = arrayListOf(
+        Subtitle(0, 3000, "O Allah, give me so much patience,"),
+        Subtitle(3000, 5000, "As if in the words of any person in the world,"),
+        Subtitle(5000, 7000, "Do not be heartbroken.")
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize PlayerView
         playerView = findViewById(R.id.playerView)
+        subtitleTextView = findViewById(R.id.subtitleTextView)
 
         // Initialize ExoPlayer
         player = ExoPlayer.Builder(this).build()
@@ -30,8 +53,33 @@ class MainActivity : AppCompatActivity() {
 
         // Prepare the player
         player.prepare()
-        // Start playback automatically
         player.playWhenReady = true
+
+        startSubtitleUpdater()
+    }
+
+    private fun startSubtitleUpdater() {
+        handler.post(object : Runnable {
+            override fun run() {
+                val currentPosition = player.currentPosition
+                displaySubtitle(currentPosition)
+                handler.postDelayed(this, 100)
+
+                Log.e("TAG", "CurrentPosition: $currentPosition")
+            }
+        })
+    }
+
+    private fun displaySubtitle(currentPosition: Long) {
+        val currentSubtitle = subtitles.find {
+            currentPosition >= it.startTime && currentPosition < it.endTime
+        }
+        subtitleTextView.visibility = if (currentSubtitle != null) {
+            subtitleTextView.text = currentSubtitle.text
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
     }
 
     override fun onStop() {
