@@ -33,7 +33,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     )
 
     private val subtitles = arrayListOf(
-        Subtitle(1, 0, 3200, "O Allah, give me so much patience,"),
+        Subtitle(
+            1,
+            0,
+            3200,
+            "O Allah, give me so much patience, is it working or not Rakibul tell me?"
+        ),
         Subtitle(2, 3201, 5497, "As if in the words of any person in the world,"),
         Subtitle(3, 5498, 7094, "Do not be heartbroken.")
     )
@@ -95,6 +100,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun stopRunnableHandler() {
+        textToSpeech.stop()
         handler.removeCallbacks(runnable)
     }
 
@@ -124,6 +130,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         if (currentSubtitle?.id != lastSubtitleId) {
             subtitleTextView.visibility = if (currentSubtitle != null) {
+
+                val subtitleDurationMs =
+                    (currentSubtitle.endTime - currentSubtitle.startTime).toFloat()
+                val wordCount = currentSubtitle.text.split(" ").size
+
+                val wordsPerSecond = (subtitleDurationMs / wordCount) * 1000
+                val estimatedSpeechDuration = wordCount / wordsPerSecond
+
+                val speechRate = estimatedSpeechDuration / subtitleDurationMs
+                textToSpeech.setSpeechRate(speechRate)
+
                 speakText(currentSubtitle.text)
 
                 subtitleTextView.text = currentSubtitle.text
@@ -148,11 +165,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-
-        textToSpeech.stop()
-        textToSpeech.shutdown()
+        if (::textToSpeech.isInitialized) {
+            textToSpeech.stop()
+            textToSpeech.shutdown()
+        }
         player.release()
+        super.onDestroy()
     }
 
     override fun onInit(status: Int) {
