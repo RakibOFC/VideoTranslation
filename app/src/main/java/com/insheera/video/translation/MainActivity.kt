@@ -7,6 +7,7 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var subtitleTextView: TextView
     private lateinit var textToSpeech: TextToSpeech
     private val handler = Handler(Looper.getMainLooper())
+    private var isTAudioOn = true
 
     data class Subtitle(
         val id: Int,
@@ -33,8 +35,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     )
 
     private val subtitles = arrayListOf(
-        Subtitle(1, 0, 3200, "O Allah, give me so much patience"),
-        Subtitle(2, 3201, 5497, "As if in the words of any person in the world"), // 5497
+        Subtitle(1, 0, 2200, "O Allah, give me so much patience"),
+        Subtitle(2, 2201, 5497, "As if in the words of any person in the world"), // 5497
         Subtitle(3, 5498, 7094, "Do not be heartbroken")
     )
 
@@ -42,8 +44,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val btnTAudio = findViewById<Button>(R.id.btnTAudio)
         textToSpeech = TextToSpeech(this, this)
         initializePlayer()
+
+        btnTAudio.setOnClickListener {
+            isTAudioOn = false
+            player.volume = 1f
+            textToSpeech.stop()
+        }
     }
 
     private fun initializePlayer() {
@@ -127,14 +136,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             subtitleTextView.visibility = if (currentSubtitle != null) {
 
                 val subtitleText = currentSubtitle.text
-                val subtitleDurationMs =
-                    (currentSubtitle.endTime - currentSubtitle.startTime).toFloat()
+                if (isTAudioOn) {
+                    val subtitleDurationMs =
+                        (currentSubtitle.endTime - currentSubtitle.startTime).toFloat()
 
-                val wordsPerSecond = calculateWordsPerSecond(subtitleText)
-                val estimatedSpeakTimeMs = calculateSpeechDuration(subtitleText, wordsPerSecond)
-                val adjustedSpeechRate = estimatedSpeakTimeMs / subtitleDurationMs
-                textToSpeech.setSpeechRate(adjustedSpeechRate)
-                speakText(subtitleText)
+                    val wordsPerSecond = calculateWordsPerSecond(subtitleText)
+                    val estimatedSpeakTimeMs = calculateSpeechDuration(subtitleText, wordsPerSecond)
+                    val adjustedSpeechRate = estimatedSpeakTimeMs / subtitleDurationMs
+                    textToSpeech.setSpeechRate(adjustedSpeechRate)
+                    speakText(subtitleText)
+                }
 
                 subtitleTextView.text = subtitleText
                 View.VISIBLE
