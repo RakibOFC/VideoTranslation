@@ -9,18 +9,18 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import androidx.media3.ui.SubtitleView
 
 @UnstableApi
 class MainActivity : AppCompatActivity() {
 
     private lateinit var player: ExoPlayer
     private lateinit var playerView: PlayerView
-    private val handler = Handler(Looper.getMainLooper())
     private lateinit var subtitleTextView: TextView
+    private val handler = Handler(Looper.getMainLooper())
 
     data class Subtitle(
         val startTime: Long,
@@ -38,39 +38,77 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Initialize PlayerView
         playerView = findViewById(R.id.playerView)
         subtitleTextView = findViewById(R.id.subtitleTextView)
 
-        // Initialize ExoPlayer
         player = ExoPlayer.Builder(this).build()
         playerView.player = player
 
-        // Video URI from raw resource
         val videoUri = Uri.parse("android.resource://${packageName}/${R.raw.sample_video}")
         val mediaItem = MediaItem.fromUri(videoUri)
         player.setMediaItem(mediaItem)
 
-        // Prepare the player
         player.prepare()
-        player.playWhenReady = true
 
-        startSubtitleUpdater()
-    }
+        player.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) {
+                    Log.e("TAG", "playing")
+                    startRunnableHandler()
 
-    private fun startSubtitleUpdater() {
-        handler.post(object : Runnable {
-            override fun run() {
-                val currentPosition = player.currentPosition
-                displaySubtitle(currentPosition)
-                handler.postDelayed(this, 100)
+                } else {
+                    Log.e("TAG", "paused")
+                    stopRunnableHandler()
+                }
+            }
 
-                Log.e("TAG", "CurrentPosition: $currentPosition")
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_READY -> {
+                        Log.e("TAG", "ready")
+                    }
+
+                    Player.STATE_ENDED -> {
+                        Log.e("TAG", "ended")
+                        stopRunnableHandler()
+                    }
+
+                    Player.STATE_BUFFERING -> {
+                        Log.e("TAG", "buffering")
+                    }
+
+                    Player.STATE_IDLE -> {
+                        Log.e("TAG", "idle")
+                    }
+                }
             }
         })
     }
 
-    private fun displaySubtitle(currentPosition: Long) {
+    private fun stopRunnableHandler() {
+        handler.removeCallbacks(runnable)
+    }
+
+    private fun startRunnableHandler() {
+        try {
+            handler.removeCallbacks(runnable)
+        } catch (_: NullPointerException) {
+
+        }
+        handler.post(runnable)
+    }
+
+    private val runnable = object : Runnable {
+        override fun run() {
+            if (player.isPlaying) {
+                updateSubtitle(player.currentPosition)
+            }
+            handler.postDelayed(this, 300)
+            Log.e("TAG", "running ${player.currentPosition}")
+        }
+    }
+
+    private fun updateSubtitle(currentPosition: Long) {
         val currentSubtitle = subtitles.find {
             currentPosition >= it.startTime && currentPosition < it.endTime
         }
@@ -85,6 +123,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         player.release()
+        handler.removeCallbacksAndMessages(null)
     }
 }
 
