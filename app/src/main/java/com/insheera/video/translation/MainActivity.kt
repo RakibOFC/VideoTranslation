@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -13,13 +14,15 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import java.util.Locale
 
 @UnstableApi
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var player: ExoPlayer
     private lateinit var playerView: PlayerView
     private lateinit var subtitleTextView: TextView
+    private lateinit var textToSpeech: TextToSpeech
     private val handler = Handler(Looper.getMainLooper())
 
     data class Subtitle(
@@ -39,6 +42,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        textToSpeech = TextToSpeech(this, this)
+        initializePlayer()
+    }
+
+    private fun initializePlayer() {
         playerView = findViewById(R.id.playerView)
         subtitleTextView = findViewById(R.id.subtitleTextView)
 
@@ -116,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (currentSubtitle?.id != lastSubtitleId) {
             subtitleTextView.visibility = if (currentSubtitle != null) {
-                Log.e("TAG", "If: ${player.currentPosition}")
+                speakText(currentSubtitle.text)
 
                 subtitleTextView.text = currentSubtitle.text
                 View.VISIBLE
@@ -127,10 +135,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun speakText(text: String) {
+        player.volume = 0f
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
     override fun onStop() {
         super.onStop()
+
         player.release()
         handler.removeCallbacksAndMessages(null)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        textToSpeech.stop()
+        textToSpeech.shutdown()
+        player.release()
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            textToSpeech.language = Locale.US
+        } else {
+            Log.e("TTS", "Initialization failed!")
+        }
     }
 }
 
