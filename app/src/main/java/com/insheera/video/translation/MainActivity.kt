@@ -23,15 +23,16 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
 
     data class Subtitle(
+        val id: Int,
         val startTime: Long,
         val endTime: Long,
         val text: String
     )
 
     private val subtitles = arrayListOf(
-        Subtitle(0, 3000, "O Allah, give me so much patience,"),
-        Subtitle(3000, 5000, "As if in the words of any person in the world,"),
-        Subtitle(5000, 7000, "Do not be heartbroken.")
+        Subtitle(1, 0, 3200, "O Allah, give me so much patience,"),
+        Subtitle(2, 3201, 5497, "As if in the words of any person in the world,"),
+        Subtitle(3, 5498, 7094, "Do not be heartbroken.")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,19 +105,25 @@ class MainActivity : AppCompatActivity() {
                 updateSubtitle(player.currentPosition)
             }
             handler.postDelayed(this, 300)
-            Log.e("TAG", "running ${player.currentPosition}")
         }
     }
+
+    private var lastSubtitleId: Int? = null
 
     private fun updateSubtitle(currentPosition: Long) {
         val currentSubtitle = subtitles.find {
             currentPosition >= it.startTime && currentPosition < it.endTime
         }
-        subtitleTextView.visibility = if (currentSubtitle != null) {
-            subtitleTextView.text = currentSubtitle.text
-            View.VISIBLE
-        } else {
-            View.GONE
+        if (currentSubtitle?.id != lastSubtitleId) {
+            subtitleTextView.visibility = if (currentSubtitle != null) {
+                Log.e("TAG", "If: ${player.currentPosition}")
+
+                subtitleTextView.text = currentSubtitle.text
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+            lastSubtitleId = currentSubtitle?.id
         }
     }
 
