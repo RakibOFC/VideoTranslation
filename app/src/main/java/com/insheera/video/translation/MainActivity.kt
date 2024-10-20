@@ -33,14 +33,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     )
 
     private val subtitles = arrayListOf(
-        Subtitle(
-            1,
-            0,
-            3200,
-            "O Allah, give me so much patience, is it working or not Rakibul tell me?"
-        ),
-        Subtitle(2, 3201, 5497, "As if in the words of any person in the world,"),
-        Subtitle(3, 5498, 7094, "Do not be heartbroken.")
+        Subtitle(1, 0, 3200, "O Allah, give me so much patience"),
+        Subtitle(2, 3201, 5497, "As if in the words of any person in the world"), // 5497
+        Subtitle(3, 5498, 7094, "Do not be heartbroken")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -131,19 +126,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (currentSubtitle?.id != lastSubtitleId) {
             subtitleTextView.visibility = if (currentSubtitle != null) {
 
+                val subtitleText = currentSubtitle.text
                 val subtitleDurationMs =
                     (currentSubtitle.endTime - currentSubtitle.startTime).toFloat()
-                val wordCount = currentSubtitle.text.split(" ").size
 
-                val wordsPerSecond = (subtitleDurationMs / wordCount) * 1000
-                val estimatedSpeechDuration = wordCount / wordsPerSecond
+                val wordsPerSecond = calculateWordsPerSecond(subtitleText)
+                val estimatedSpeakTimeMs = calculateSpeechDuration(subtitleText, wordsPerSecond)
+                val adjustedSpeechRate = estimatedSpeakTimeMs / subtitleDurationMs
+                textToSpeech.setSpeechRate(adjustedSpeechRate)
+                speakText(subtitleText)
 
-                val speechRate = estimatedSpeechDuration / subtitleDurationMs
-                textToSpeech.setSpeechRate(speechRate)
-
-                speakText(currentSubtitle.text)
-
-                subtitleTextView.text = currentSubtitle.text
+                subtitleTextView.text = subtitleText
                 View.VISIBLE
             } else {
                 View.GONE
@@ -152,9 +145,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun calculateSpeechDuration(text: String, wordsPerSecond: Float): Float {
+        val wordCount = text.split(" ").size
+        return (wordCount / wordsPerSecond) * 1000
+    }
+
     private fun speakText(text: String) {
         player.volume = 0f
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TTS_ID")
     }
 
     override fun onStop() {
@@ -179,6 +177,54 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         } else {
             Log.e("TTS", "Initialization failed!")
         }
+    }
+
+    private fun calculateWordsPerSecond(text: String): Float {
+        val wordCount = text.split(" ").size
+
+        // Estimate syllables dynamically
+        val syllableCount = estimateSyllables(text)
+
+        // Adjust wordsPerSecond dynamically based on sentence length and complexity
+        return if (wordCount > 0) {
+            // Short sentences can be spoken faster, while long sentences slower
+            when {
+                syllableCount > 15 -> 1.8f // For complex or long sentences
+                syllableCount > 8 -> 2.2f // Medium complexity
+                else -> 2.5f // Short, simple sentences
+            }
+        } else {
+            2.5f // Default value
+        }
+    }
+
+    private fun estimateSyllables(text: String): Int {
+
+        val vowels = "aeiou"
+        val words = text.split(" ")
+        var syllableCount = 0
+
+        for (word in words) {
+            val cleanWord = word.lowercase(Locale.getDefault()).replace("[^a-z]".toRegex(), "")
+            var wordSyllables = 0
+            var isPrevVowel = false
+
+            for (char in cleanWord) {
+                val isVowel = vowels.contains(char)
+                if (isVowel && !isPrevVowel) {
+                    wordSyllables++
+                }
+                isPrevVowel = isVowel
+            }
+
+            // Adjustments for special cases (common in English)
+            if (cleanWord.endsWith("e") && wordSyllables > 1) {
+                wordSyllables-- // Silent 'e' at the end of the word
+            }
+            syllableCount += wordSyllables
+        }
+
+        return syllableCount
     }
 }
 
