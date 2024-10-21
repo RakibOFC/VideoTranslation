@@ -14,8 +14,10 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
 import java.util.Locale
+
 
 @UnstableApi
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
@@ -35,9 +37,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     )
 
     private val subtitles = arrayListOf(
+        Subtitle(1, 0, 3500, "Sir, how did you get so much knowledge"),
+        Subtitle(2, 3500, 6500, "about Islam by studying in general line?"),
+        Subtitle(3, 6501, 8000, "We who study in normal line,"),
+        Subtitle(4, 8001, 10000, "How will we learn about Islam?")
+
+        /*
+        Subtitle(1, 0, 6500, "Sir, how did you get so much knowledge about Islam by studying in general line?"),
+        Subtitle(2, 6501, 10000, "How can we who study in normal lines know about Islam?")
+        ---------------------------
         Subtitle(1, 0, 2200, "O Allah, give me so much patience"),
         Subtitle(2, 2201, 5497, "As if in the words of any person in the world"), // 5497
         Subtitle(3, 5498, 7094, "Do not be heartbroken")
+        */
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +74,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         player = ExoPlayer.Builder(this).build()
         playerView.player = player
 
-        val videoUri = Uri.parse("android.resource://${packageName}/${R.raw.sample_video}")
+        val videoUri = Uri.parse("android.resource://${packageName}/${R.raw.sample_video2}")
         val mediaItem = MediaItem.fromUri(videoUri)
         player.setMediaItem(mediaItem)
 
@@ -185,6 +197,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             textToSpeech.language = Locale.US
+            textToSpeech.setPitch(0.0f)
         } else {
             Log.e("TTS", "Initialization failed!")
         }
@@ -239,7 +252,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 }
 
-/*
+    /*
     Bengali:
     হে আল্লাহ, আমাকে এতো বেশি ধৈর্য দিন,
     যেন পৃথিবীর কোনো মানুষের কোনো কথায়,
@@ -256,4 +269,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     3
     00:00:04,0 --> 00:00:07,0
     >> Do not be heartbroken.
+
+    Bengali:
+    স্যার, আপনি জেনারেল লাইনে পড়ে কিভাবে ইসলাম সম্পর্কে এত জ্ঞান অর্জন করলেন।
+    আমরা যারা নরমাল লাইনে স্টাডি করি, আমরা কিভানে ইসলাম সম্পর্কে জানবো।
     */
