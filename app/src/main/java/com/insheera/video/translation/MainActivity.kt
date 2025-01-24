@@ -65,6 +65,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             player.volume = 1f
             textToSpeech.stop()
         }
+
+        convertTextToSpeechAndPlay("This is you ")
     }
 
     private fun initializePlayer() {
